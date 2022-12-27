@@ -1,0 +1,12 @@
+{
+    "id": "{9D16FD4F-37AA-96D0-EC29-8203B09156B2}",
+    "name": "Alarmierung",
+    "author": "Ulrich Bittner",
+    "url": "https://github.com/ubittner/Alarmierung",
+    "compatibility": {
+        "version": "6.1"
+    },
+    "version": "7.0",
+    "build": 1,
+    "date": 1662617816
+}

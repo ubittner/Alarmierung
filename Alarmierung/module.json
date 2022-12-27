@@ -1,0 +1,14 @@
+{
+    "id": "{2470D8A2-135B-98CA-6A89-70A18DC46CAE}",
+    "name": "Alarmierung",
+    "type": 3,
+    "vendor": "UB",
+    "aliases": [
+        "Alarmierung"
+    ],
+    "url": "https://github.com/ubittner/Alarmierung/tree/main/Alarmierung",
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "ALM"
+}
