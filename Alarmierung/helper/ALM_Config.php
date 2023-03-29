@@ -8,8 +8,8 @@
  * @license       https://creativecommons.org/licenses/by-nc-sa/4.0/ CC BY-NC-SA 4.0
  */
 
+/** @noinspection PhpUndefinedFunctionInspection */
 /** @noinspection DuplicatedCode */
-/** @noinspection PhpUnused */
 
 declare(strict_types=1);
 
@@ -120,60 +120,24 @@ trait ALM_Config
             ]
         ];
 
-        //Functions
-        $form['elements'][] = [
-            'type'    => 'ExpansionPanel',
-            'caption' => 'Funktionen',
-            'items'   => [
-                [
-                    'type'    => 'CheckBox',
-                    'name'    => 'EnableActive',
-                    'caption' => 'Aktiv (Schalter im WebFront)'
-                ],
-                [
-                    'type'    => 'CheckBox',
-                    'name'    => 'EnableAlarming',
-                    'caption' => 'Alarmierung'
-                ],
-                [
-                    'type'    => 'CheckBox',
-                    'name'    => 'EnableAlarmStage',
-                    'caption' => 'Alarmstufe'
-                ],
-                [
-                    'type'    => 'CheckBox',
-                    'name'    => 'EnableAlarmingValue',
-                    'caption' => 'Anzahl der Auslösungen'
-                ],
-                [
-                    'type'    => 'CheckBox',
-                    'name'    => 'EnableResetAlarmingValue',
-                    'caption' => 'Rückstellung'
-                ]
-            ]
-        ];
-
         //Trigger list
         $triggerListValues = [];
         $variables = json_decode($this->ReadPropertyString('TriggerList'), true);
         foreach ($variables as $variable) {
-            $rowColor = '#C0FFC0'; //light green
-            if (!$variable['Use']) {
-                $rowColor = '#DFDFDF'; //grey
-            }
-            //Primary condition
+            $sensorID = 0;
             if ($variable['PrimaryCondition'] != '') {
                 $primaryCondition = json_decode($variable['PrimaryCondition'], true);
                 if (array_key_exists(0, $primaryCondition)) {
                     if (array_key_exists(0, $primaryCondition[0]['rules']['variable'])) {
-                        $id = $primaryCondition[0]['rules']['variable'][0]['variableID'];
-                        if ($id <= 1 || !@IPS_ObjectExists($id)) { //0 = main category, 1 = none
-                            $rowColor = '#FFC0C0'; //red
-                        }
+                        $sensorID = $primaryCondition[0]['rules']['variable'][0]['variableID'];
                     }
                 }
             }
-            //Secondary condition, multi
+            //Check conditions first
+            $conditions = true;
+            if ($sensorID <= 1 || !@IPS_ObjectExists($sensorID)) { //0 = main category, 1 = none
+                $conditions = false;
+            }
             if ($variable['SecondaryCondition'] != '') {
                 $secondaryConditions = json_decode($variable['SecondaryCondition'], true);
                 if (array_key_exists(0, $secondaryConditions)) {
@@ -183,14 +147,28 @@ trait ALM_Config
                             if (array_key_exists('variableID', $rule)) {
                                 $id = $rule['variableID'];
                                 if ($id <= 1 || !@IPS_ObjectExists($id)) { //0 = main category, 1 = none
-                                    $rowColor = '#FFC0C0'; //red
+                                    $conditions = false;
                                 }
                             }
                         }
                     }
                 }
             }
-            $triggerListValues[] = ['rowColor' => $rowColor];
+            $stateName = 'fehlerhaft';
+            $rowColor = '#FFC0C0'; //red
+            if ($conditions) {
+                $stateName = 'Bedingung nicht erfüllt!';
+                $rowColor = '#C0FFC0'; //light green
+                if (IPS_IsConditionPassing($variable['PrimaryCondition']) && IPS_IsConditionPassing($variable['SecondaryCondition'])) {
+                    $stateName = 'Bedingung erfüllt';
+                    $rowColor = '#C0C0FF'; //violett
+                }
+                if (!$variable['Use']) {
+                    $stateName = 'Deaktiviert';
+                    $rowColor = '#DFDFDF'; //grey
+                }
+            }
+            $triggerListValues[] = ['ActualStatus' => $stateName, 'SensorID' => $sensorID, 'rowColor' => $rowColor];
         }
 
         $form['elements'][] = [
@@ -212,6 +190,19 @@ trait ALM_Config
                             'edit'    => [
                                 'type' => 'CheckBox'
                             ]
+                        ],
+                        [
+                            'name'    => 'ActualStatus',
+                            'caption' => 'Aktueller Status',
+                            'width'   => '200px',
+                            'add'     => ''
+                        ],
+                        [
+                            'caption' => 'ID',
+                            'name'    => 'SensorID',
+                            'onClick' => self::MODULE_PREFIX . '_ModifyTriggerListButton($id, "TriggerListConfigurationButton", $TriggerList["PrimaryCondition"]);',
+                            'width'   => '100px',
+                            'add'     => ''
                         ],
                         [
                             'caption' => 'Bezeichnung',
@@ -695,6 +686,50 @@ trait ALM_Config
                             'objectID' => $id
                         ]
                     ]
+                ]
+            ]
+        ];
+
+        //Visualisation
+        $form['elements'][] = [
+            'type'    => 'ExpansionPanel',
+            'caption' => 'Visualisierung',
+            'items'   => [
+                [
+                    'type'    => 'Label',
+                    'caption' => 'WebFront',
+                    'bold'    => true,
+                    'italic'  => true
+                ],
+                [
+                    'type'    => 'Label',
+                    'caption' => 'Anzeigeoptionen',
+                    'italic'  => true
+                ],
+                [
+                    'type'    => 'CheckBox',
+                    'name'    => 'EnableActive',
+                    'caption' => 'Aktiv'
+                ],
+                [
+                    'type'    => 'CheckBox',
+                    'name'    => 'EnableAlarming',
+                    'caption' => 'Alarmierung'
+                ],
+                [
+                    'type'    => 'CheckBox',
+                    'name'    => 'EnableAlarmStage',
+                    'caption' => 'Alarmstufe'
+                ],
+                [
+                    'type'    => 'CheckBox',
+                    'name'    => 'EnableAlarmingValue',
+                    'caption' => 'Anzahl der Auslösungen'
+                ],
+                [
+                    'type'    => 'CheckBox',
+                    'name'    => 'EnableResetAlarmingValue',
+                    'caption' => 'Rückstellung'
                 ]
             ]
         ];
