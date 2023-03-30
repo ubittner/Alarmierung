@@ -59,6 +59,7 @@ class Alarmierung extends IPSModule
         $this->RegisterPropertyInteger('PostAlarmDuration', 300);
         $this->RegisterPropertyString('PostAlarmActions', '[]');
         $this->RegisterPropertyInteger('AlarmProtocol', 0);
+        $this->RegisterPropertyString('Location', '');
 
         ########## Variables
 

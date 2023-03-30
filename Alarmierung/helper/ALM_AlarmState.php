@@ -8,6 +8,8 @@
  * @license       https://creativecommons.org/licenses/by-nc-sa/4.0/ CC BY-NC-SA 4.0
  */
 
+/** @noinspection DuplicatedCode */
+
 declare(strict_types=1);
 
 trait ALM_AlarmState
@@ -101,6 +103,7 @@ trait ALM_AlarmState
             $this->SetDefault();
             return;
         }
+        $location = $this->ReadPropertyString('Location');
         if ($this->ReadPropertyBoolean('UsePreAlarm')) {
             $this->SendDebug(__FUNCTION__, 'Voralarm', 0);
             $this->SetValue('Alarming', true);
@@ -117,9 +120,14 @@ trait ALM_AlarmState
             if ($this->ReadPropertyBoolean('UseAlarmProtocolPreAlarm')) {
                 $id = $this->ReadPropertyInteger('AlarmProtocol');
                 if ($id != 0 && @IPS_ObjectExists($id)) {
-                    $eventMessage = date('d.m.Y, H:i:s') . ', Der Voralarm wurde ausgelöst. (ID ' . $this->InstanceID . ')';
-                    $this->SendDebug(__FUNCTION__, 'Alarmprotokoll: ' . $eventMessage, 0);
-                    $scriptText = self::ALARMPROTOCOL_MODULE_PREFIX . '_UpdateMessages(' . $id . ', "' . $eventMessage . '", 0);';
+                    $text = 'Der Voralarm wurde ausgelöst.';
+                    $this->SendDebug(__FUNCTION__, 'Alarmprotokoll: ' . $text, 0);
+                    if ($location == '') {
+                        $logText = date('d.m.Y, H:i:s') . ', ' . $text . ' (ID ' . $this->InstanceID . ')';
+                    } else {
+                        $logText = date('d.m.Y, H:i:s') . ', ' . $this->ReadPropertyString('Location') . ', Alarmierung, ' . $text . ' (ID ' . $this->InstanceID . ')';
+                    }
+                    $scriptText = self::ALARMPROTOCOL_MODULE_PREFIX . '_UpdateMessages(' . $id . ', "' . $logText . '", 0);';
                     @IPS_RunScriptText($scriptText);
                 }
             }
@@ -140,6 +148,7 @@ trait ALM_AlarmState
             $this->SetDefault();
             return;
         }
+        $location = $this->ReadPropertyString('Location');
         $this->SetTimerInterval('SetMainAlarm', 0);
         if ($this->ReadPropertyBoolean('UseMainAlarm')) {
             $this->SendDebug(__FUNCTION__, 'Hauptalarm', 0);
@@ -159,9 +168,14 @@ trait ALM_AlarmState
             if ($this->ReadPropertyBoolean('UseAlarmProtocolMainAlarm')) {
                 $id = $this->ReadPropertyInteger('AlarmProtocol');
                 if ($id != 0 && @IPS_ObjectExists($id)) {
-                    $eventMessage = date('d.m.Y, H:i:s') . ', Der Hauptalarm wurde ausgelöst. (ID ' . $this->InstanceID . ')';
-                    $this->SendDebug(__FUNCTION__, 'Alarmprotokoll: ' . $eventMessage, 0);
-                    $scriptText = self::ALARMPROTOCOL_MODULE_PREFIX . '_UpdateMessages(' . $id . ', "' . $eventMessage . '", 0);';
+                    $text = 'Der Hauptalarm wurde ausgelöst.';
+                    $this->SendDebug(__FUNCTION__, 'Alarmprotokoll: ' . $text, 0);
+                    if ($location == '') {
+                        $logText = date('d.m.Y, H:i:s') . ', ' . $text . ' (ID ' . $this->InstanceID . ')';
+                    } else {
+                        $logText = date('d.m.Y, H:i:s') . ', ' . $this->ReadPropertyString('Location') . ', Alarmierung, ' . $text . ' (ID ' . $this->InstanceID . ')';
+                    }
+                    $scriptText = self::ALARMPROTOCOL_MODULE_PREFIX . '_UpdateMessages(' . $id . ', "' . $logText . '", 0);';
                     @IPS_RunScriptText($scriptText);
                 }
             }
@@ -182,6 +196,7 @@ trait ALM_AlarmState
             $this->SetDefault();
             return;
         }
+        $location = $this->ReadPropertyString('Location');
         $this->SetTimerInterval('SetMainAlarm', 0);
         $this->SetTimerInterval('SetPostAlarm', 0);
         if ($this->ReadPropertyBoolean('UsePostAlarm')) {
@@ -201,9 +216,14 @@ trait ALM_AlarmState
             if ($this->ReadPropertyBoolean('UseAlarmProtocolPostAlarm')) {
                 $id = $this->ReadPropertyInteger('AlarmProtocol');
                 if ($id != 0 && @IPS_ObjectExists($id)) {
-                    $eventMessage = date('d.m.Y, H:i:s') . ', Der Nachalarm wurde ausgelöst. (ID ' . $this->InstanceID . ')';
-                    $this->SendDebug(__FUNCTION__, 'Alarmprotokoll: ' . $eventMessage, 0);
-                    $scriptText = self::ALARMPROTOCOL_MODULE_PREFIX . '_UpdateMessages(' . $id . ', "' . $eventMessage . '", 0);';
+                    $text = 'Der Nachalarm wurde ausgelöst.';
+                    $this->SendDebug(__FUNCTION__, 'Alarmprotokoll: ' . $text, 0);
+                    if ($location == '') {
+                        $logText = date('d.m.Y, H:i:s') . ', ' . $text . ' (ID ' . $this->InstanceID . ')';
+                    } else {
+                        $logText = date('d.m.Y, H:i:s') . ', ' . $this->ReadPropertyString('Location') . ', Alarmierung, ' . $text . ' (ID ' . $this->InstanceID . ')';
+                    }
+                    $scriptText = self::ALARMPROTOCOL_MODULE_PREFIX . '_UpdateMessages(' . $id . ', "' . $logText . '", 0);';
                     @IPS_RunScriptText($scriptText);
                 }
             }

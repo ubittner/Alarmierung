@@ -686,6 +686,12 @@ trait ALM_Config
                             'objectID' => $id
                         ]
                     ]
+                ],
+                [
+                    'type'    => 'ValidationTextBox',
+                    'name'    => 'Location',
+                    'caption' => 'Standortbezeichnung (z.B. Musterstraße 1)',
+                    'width'   => '600px'
                 ]
             ]
         ];
