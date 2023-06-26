@@ -24,9 +24,9 @@ class Alarmierung extends IPSModule
     use ALM_TriggerCondition;
 
     //Constants
-    private const MODULE_NAME = 'Alarmierung';
+    private const LIBRARY_GUID = '{9D16FD4F-37AA-96D0-EC29-8203B09156B2}';
+    private const MODULE_GUID = '{2470D8A2-135B-98CA-6A89-70A18DC46CAE}';
     private const MODULE_PREFIX = 'ALM';
-    private const MODULE_VERSION = '7.0-1, 08.09.2022';
     private const ALARMPROTOCOL_MODULE_GUID = '{66BDB59B-E80F-E837-6640-005C32D5FC24}';
     private const ALARMPROTOCOL_MODULE_PREFIX = 'AP';
 
@@ -207,6 +207,19 @@ class Alarmierung extends IPSModule
             }
         }
 
+        //Alarm protocol
+        $names = [];
+        $names[] = ['propertyName' => 'AlarmProtocol', 'useUpdate' => false];
+        foreach ($names as $name) {
+            $id = $this->ReadPropertyInteger($name['propertyName']);
+            if ($id > 1 && @IPS_ObjectExists($id)) {
+                $this->RegisterReference($id);
+                if ($name['useUpdate']) {
+                    $this->RegisterMessage($id, VM_UPDATE);
+                }
+            }
+        }
+
         //WebFront options
         IPS_SetHidden($this->GetIDForIdent('Active'), !$this->ReadPropertyBoolean('EnableActive'));
         IPS_SetHidden($this->GetIDForIdent('Alarming'), !$this->ReadPropertyBoolean('EnableAlarming'));
@@ -228,9 +241,7 @@ class Alarmierung extends IPSModule
         if (!empty($profiles)) {
             foreach ($profiles as $profile) {
                 $profileName = self::MODULE_PREFIX . '.' . $this->InstanceID . '.' . $profile;
-                if (IPS_VariableProfileExists($profileName)) {
-                    IPS_DeleteVariableProfile($profileName);
-                }
+                $this->UnregisterProfile($profileName);
             }
         }
     }
@@ -269,10 +280,18 @@ class Alarmierung extends IPSModule
         $id = @IPS_CreateInstance(self::ALARMPROTOCOL_MODULE_GUID);
         if (is_int($id)) {
             IPS_SetName($id, 'Alarmprotokoll');
-            echo 'Instanz mit der ID ' . $id . ' wurde erfolgreich erstellt!';
+            $infoText = 'Instanz mit der ID ' . $id . ' wurde erfolgreich erstellt!';
         } else {
-            echo 'Instanz konnte nicht erstellt werden!';
+            $infoText = 'Instanz konnte nicht erstellt werden!';
         }
+        $this->UpdateFormField('InfoMessage', 'visible', true);
+        $this->UpdateFormField('InfoMessageLabel', 'caption', $infoText);
+    }
+
+    public function UIShowMessage(string $Message): void
+    {
+        $this->UpdateFormField('InfoMessage', 'visible', true);
+        $this->UpdateFormField('InfoMessageLabel', 'caption', $Message);
     }
 
     #################### Request Action
@@ -304,6 +323,39 @@ class Alarmierung extends IPSModule
     private function KernelReady()
     {
         $this->ApplyChanges();
+    }
+
+    /**
+     * Unregisters a variable profile.
+     *
+     * @param string $Name
+     * @return void
+     */
+    private function UnregisterProfile(string $Name): void
+    {
+        if (!IPS_VariableProfileExists($Name)) {
+            return;
+        }
+        foreach (IPS_GetVariableList() as $VarID) {
+            if (IPS_GetParent($VarID) == $this->InstanceID) {
+                continue;
+            }
+            if (IPS_GetVariable($VarID)['VariableCustomProfile'] == $Name) {
+                return;
+            }
+            if (IPS_GetVariable($VarID)['VariableProfile'] == $Name) {
+                return;
+            }
+        }
+        foreach (IPS_GetMediaListByType(MEDIATYPE_CHART) as $mediaID) {
+            $content = json_decode(base64_decode(IPS_GetMediaContent($mediaID)), true);
+            foreach ($content['axes'] as $axis) {
+                if ($axis['profile' === $Name]) {
+                    return;
+                }
+            }
+        }
+        IPS_DeleteVariableProfile($Name);
     }
 
     private function CheckMaintenance(): bool
