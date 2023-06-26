@@ -62,13 +62,15 @@ Das Modul Alarmierung reagiert auf verschiedene Auslöser.
 Das Modul Alarmierung kann über eine externe Aktion geschaltet werden.  
 Nachfolgendes Beispiel löst eine Alarmierung aus.
 
-> ALM_SetAlarming(12345, true);
+```php
+ALM_SetAlarming(12345, true);
+```
 
 ### 6. PHP-Befehlsreferenz
 
 #### 6.1 Alarmierung schalten
 
-```
+```text
 ALM_SetAlarming(integer INSTANCE_ID, boolean STATE);
 ```
 
@@ -79,14 +81,16 @@ Der Befehl liefert keinen Rückgabewert.
 | `INSTANCE_ID` | ID der Instanz |                                  |
 | `STATE`       | Status         | false = Kein Alarm, true = Alarm |
 
-Beispiel:
-> ALM_SetAlarming(12345, true);
+**Beispiel**:
+```php
+ALM_SetAlarming(12345, true);
+```
 
 ---
 
 #### 6.2 Voralarm auslösen
 
-```
+```text
 ALM_SetPreAlarm(integer INSTANCE_ID);
 ```
 
@@ -96,14 +100,16 @@ Der Befehl liefert keinen Rückgabewert.
 |---------------|----------------|
 | `INSTANCE_ID` | ID der Instanz |                                 
 
-Beispiel:
-> ALM_SetPreAlarm(12345);
+**Beispiel**:
+```php
+ALM_SetPreAlarm(12345);
+```
 
 ---
 
 #### 6.3 Hauptalarm auslösen
 
-```
+```text
 ALM_SetMainAlarm(integer INSTANCE_ID);
 ```
 
@@ -113,14 +119,16 @@ Der Befehl liefert keinen Rückgabewert.
 |---------------|----------------|
 | `INSTANCE_ID` | ID der Instanz |                                 
 
-Beispiel:
-> ALM_SetMainAlarm(12345);
+**Beispiel**:
+```php
+ALM_SetMainAlarm(12345);
+```
 
 ---
 
 #### 6.4 Nachalarm auslösen
 
-```
+```text
 ALM_SetPostAlarm(integer INSTANCE_ID);
 ```
 
@@ -130,7 +138,9 @@ Der Befehl liefert keinen Rückgabewert.
 |---------------|----------------|
 | `INSTANCE_ID` | ID der Instanz |                                 
 
-Beispiel:
-> ALM_SetPostAlarm(12345);
+**Beispiel**:
+```php
+ALM_SetPostAlarm(12345);
+```
 
 ---
