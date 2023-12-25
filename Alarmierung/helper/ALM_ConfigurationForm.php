@@ -1,19 +1,19 @@
 <?php
 
 /**
- * @project       Alarmierung/Alarmierung
- * @file          ALM_Config.php
+ * @project       Alarmierung/Alarmierung/helper/
+ * @file          ALM_ConfigurationForm.php
  * @author        Ulrich Bittner
- * @copyright     2022 Ulrich Bittner
+ * @copyright     2023 Ulrich Bittner
  * @license       https://creativecommons.org/licenses/by-nc-sa/4.0/ CC BY-NC-SA 4.0
  */
 
-/** @noinspection PhpUndefinedFunctionInspection */
+/** @noinspection SpellCheckingInspection */
 /** @noinspection DuplicatedCode */
 
 declare(strict_types=1);
 
-trait ALM_Config
+trait ALM_ConfigurationForm
 {
     /**
      * Reloads the configuration form.
@@ -58,6 +58,17 @@ trait ALM_Config
         $this->UpdateFormField($Field, 'caption', $Caption);
         $this->UpdateFormField($Field, 'visible', $state);
         $this->UpdateFormField($Field, 'objectID', $ObjectID);
+    }
+
+    public function ModifyActualVariableStatesConfigurationButton(string $Field, int $VariableID): void
+    {
+        $state = false;
+        if ($VariableID > 1 && @IPS_ObjectExists($VariableID)) {
+            $state = true;
+        }
+        $this->UpdateFormField($Field, 'caption', 'ID ' . $VariableID . ' Bearbeiten');
+        $this->UpdateFormField($Field, 'visible', $state);
+        $this->UpdateFormField($Field, 'objectID', $VariableID);
     }
 
     /**
@@ -166,6 +177,11 @@ trait ALM_Config
         //Trigger list
         $triggerListValues = [];
         $variables = json_decode($this->ReadPropertyString('TriggerList'), true);
+        $amountRows = count($variables) + 1;
+        if ($amountRows == 1) {
+            $amountRows = 3;
+        }
+        $amountVariables = count($variables);
         foreach ($variables as $variable) {
             $sensorID = 0;
             if ($variable['PrimaryCondition'] != '') {
@@ -197,21 +213,14 @@ trait ALM_Config
                     }
                 }
             }
-            $stateName = 'fehlerhaft';
             $rowColor = '#FFC0C0'; //red
             if ($conditions) {
-                $stateName = 'Bedingung nicht erfüllt!';
-                $rowColor = '#C0C0FF'; //violett
-                if (IPS_IsConditionPassing($variable['PrimaryCondition']) && IPS_IsConditionPassing($variable['SecondaryCondition'])) {
-                    $stateName = 'Bedingung erfüllt';
-                    $rowColor = '#C0FFC0'; //light green
-                }
+                $rowColor = '#C0FFC0'; //light green
                 if (!$variable['Use']) {
-                    $stateName = 'Deaktiviert';
                     $rowColor = '#DFDFDF'; //grey
                 }
             }
-            $triggerListValues[] = ['ActualStatus' => $stateName, 'SensorID' => $sensorID, 'rowColor' => $rowColor];
+            $triggerListValues[] = ['rowColor' => $rowColor];
         }
 
         $form['elements'][] = [
@@ -220,10 +229,71 @@ trait ALM_Config
             'caption' => 'Auslöser',
             'items'   => [
                 [
+                    'type'    => 'PopupButton',
+                    'caption' => 'Aktueller Status',
+                    'popup'   => [
+                        'caption' => 'Aktueller Status',
+                        'items'   => [
+                            [
+                                'type'     => 'List',
+                                'name'     => 'ActualVariableStateList',
+                                'caption'  => 'Variablen',
+                                'add'      => false,
+                                'rowCount' => 1,
+                                'sort'     => [
+                                    'column'    => 'ActualStatus',
+                                    'direction' => 'ascending'
+                                ],
+                                'columns' => [
+                                    [
+                                        'name'    => 'ActualStatus',
+                                        'caption' => 'Aktueller Status',
+                                        'width'   => '250px',
+                                        'save'    => false
+                                    ],
+                                    [
+                                        'name'    => 'SensorID',
+                                        'caption' => 'ID',
+                                        'width'   => '80px',
+                                        'onClick' => self::MODULE_PREFIX . '_ModifyActualVariableStatesConfigurationButton($id, "ActualVariableStateConfigurationButton", $ActualVariableStateList["SensorID"]);',
+                                        'save'    => false
+                                    ],
+                                    [
+                                        'name'    => 'Designation',
+                                        'caption' => 'Bezeichnung',
+                                        'width'   => '400px',
+                                        'save'    => false
+                                    ],
+                                    [
+                                        'name'    => 'Alarming',
+                                        'caption' => 'Alarmierung',
+                                        'width'   => '250px',
+                                        'save'    => false
+                                    ],
+                                    [
+                                        'name'    => 'LastUpdate',
+                                        'caption' => 'Letzte Aktualisierung',
+                                        'width'   => '200px',
+                                        'save'    => false
+                                    ]
+                                ]
+                            ],
+                            [
+                                'type'     => 'OpenObjectButton',
+                                'name'     => 'ActualVariableStateConfigurationButton',
+                                'caption'  => 'Bearbeiten',
+                                'visible'  => false,
+                                'objectID' => 0
+                            ]
+                        ]
+                    ],
+                    'onClick' => self::MODULE_PREFIX . '_GetActualVariableStates($id);'
+                ],
+                [
                     'type'     => 'List',
                     'name'     => 'TriggerList',
                     'caption'  => 'Auslöser',
-                    'rowCount' => 5,
+                    'rowCount' => $amountRows,
                     'add'      => true,
                     'delete'   => true,
                     'columns'  => [
@@ -237,19 +307,6 @@ trait ALM_Config
                             ]
                         ],
                         [
-                            'name'    => 'ActualStatus',
-                            'caption' => 'Aktueller Status',
-                            'width'   => '200px',
-                            'add'     => ''
-                        ],
-                        [
-                            'caption' => 'ID',
-                            'name'    => 'SensorID',
-                            'onClick' => self::MODULE_PREFIX . '_ModifyTriggerListButton($id, "TriggerListConfigurationButton", $TriggerList["PrimaryCondition"]);',
-                            'width'   => '100px',
-                            'add'     => ''
-                        ],
-                        [
                             'caption' => 'Bezeichnung',
                             'name'    => 'Designation',
                             'onClick' => self::MODULE_PREFIX . '_ModifyTriggerListButton($id, "TriggerListConfigurationButton", $TriggerList["PrimaryCondition"]);',
@@ -257,27 +314,6 @@ trait ALM_Config
                             'add'     => '',
                             'edit'    => [
                                 'type' => 'ValidationTextBox'
-                            ]
-                        ],
-                        [
-                            'caption' => ' ',
-                            'name'    => 'SpacerPrimaryCondition',
-                            'width'   => '200px',
-                            'add'     => '',
-                            'visible' => false,
-                            'edit'    => [
-                                'type' => 'Label'
-                            ]
-                        ],
-                        [
-                            'caption' => 'Bedingung:',
-                            'name'    => 'LabelPrimaryCondition',
-                            'width'   => '200px',
-                            'add'     => '',
-                            'visible' => false,
-                            'edit'    => [
-                                'type' => 'Label',
-                                'bold' => true
                             ]
                         ],
                         [
@@ -290,66 +326,22 @@ trait ALM_Config
                             ]
                         ],
                         [
-                            'caption' => ' ',
+                            'caption' => 'Primären Bedingung',
                             'name'    => 'PrimaryCondition',
-                            'width'   => '200px',
+                            'width'   => '1000px',
                             'add'     => '',
-                            'visible' => false,
                             'edit'    => [
                                 'type' => 'SelectCondition'
                             ]
                         ],
                         [
-                            'caption' => ' ',
-                            'name'    => 'SpacerSecondaryCondition',
-                            'width'   => '200px',
-                            'add'     => '',
-                            'visible' => false,
-                            'edit'    => [
-                                'type' => 'Label'
-                            ]
-                        ],
-                        [
-                            'caption' => 'Weitere Bedingung(en):',
-                            'name'    => 'LabelSecondaryCondition',
-                            'width'   => '200px',
-                            'add'     => '',
-                            'visible' => false,
-                            'edit'    => [
-                                'type' => 'Label',
-                                'bold' => true
-                            ]
-                        ],
-                        [
-                            'caption' => ' ',
+                            'caption' => 'Weitere Bedingungen',
                             'name'    => 'SecondaryCondition',
-                            'width'   => '200px',
+                            'width'   => '1000px',
                             'add'     => '',
-                            'visible' => false,
                             'edit'    => [
                                 'type'  => 'SelectCondition',
                                 'multi' => true
-                            ]
-                        ],
-                        [
-                            'caption' => ' ',
-                            'name'    => 'SpacerAlarming',
-                            'width'   => '200px',
-                            'add'     => '',
-                            'visible' => false,
-                            'edit'    => [
-                                'type' => 'Label'
-                            ]
-                        ],
-                        [
-                            'caption' => 'Alarmierung:',
-                            'name'    => 'LabelAlarming',
-                            'width'   => '200px',
-                            'add'     => '',
-                            'visible' => false,
-                            'edit'    => [
-                                'type' => 'Label',
-                                'bold' => true
                             ]
                         ],
                         [
@@ -379,6 +371,10 @@ trait ALM_Config
                     'values' => $triggerListValues
                 ],
                 [
+                    'type'    => 'Label',
+                    'caption' => 'Anzahl Auslöser: ' . $amountVariables
+                ],
+                [
                     'type'     => 'OpenObjectButton',
                     'name'     => 'TriggerListConfigurationButton',
                     'caption'  => 'Bearbeiten',
@@ -387,6 +383,20 @@ trait ALM_Config
                 ]
             ]
         ];
+
+        $noAlarmActionListValues = [];
+        $variables = json_decode($this->ReadPropertyString('NoAlarmActions'), true);
+        $amountRows = count($variables) + 1;
+        if ($amountRows == 1) {
+            $amountRows = 3;
+        }
+        foreach ($variables as $variable) {
+            $rowColor = '#C0FFC0'; //light green
+            if (!$variable['Use']) {
+                $rowColor = '#DFDFDF'; //grey
+            }
+            $noAlarmActionListValues[] = ['rowColor' => $rowColor];
+        }
 
         $form['elements'][] = [
             'type'    => 'ExpansionPanel',
@@ -397,7 +407,7 @@ trait ALM_Config
                     'type'     => 'List',
                     'name'     => 'NoAlarmActions',
                     'caption'  => 'Aktionen',
-                    'rowCount' => 5,
+                    'rowCount' => $amountRows,
                     'add'      => true,
                     'delete'   => true,
                     'columns'  => [
@@ -420,30 +430,33 @@ trait ALM_Config
                             ]
                         ],
                         [
-                            'caption' => 'Aktion:',
-                            'name'    => 'LabelAction',
-                            'width'   => '200px',
-                            'add'     => '',
-                            'visible' => false,
-                            'edit'    => [
-                                'type' => 'Label',
-                                'bold' => true
-                            ]
-                        ],
-                        [
                             'caption' => 'Aktion',
                             'name'    => 'Action',
-                            'width'   => '600px',
+                            'width'   => '1000px',
                             'add'     => '',
-                            'visible' => true,
                             'edit'    => [
                                 'type' => 'SelectAction'
                             ]
                         ]
-                    ]
+                    ],
+                    'values' => $noAlarmActionListValues
                 ]
             ]
         ];
+
+        $preAlarmActionListValues = [];
+        $variables = json_decode($this->ReadPropertyString('PreAlarmActions'), true);
+        $amountRows = count($variables) + 1;
+        if ($amountRows == 1) {
+            $amountRows = 3;
+        }
+        foreach ($variables as $variable) {
+            $rowColor = '#C0FFC0'; //light green
+            if (!$variable['Use']) {
+                $rowColor = '#DFDFDF'; //grey
+            }
+            $preAlarmActionListValues[] = ['rowColor' => $rowColor];
+        }
 
         $form['elements'][] = [
             'type'    => 'ExpansionPanel',
@@ -472,7 +485,7 @@ trait ALM_Config
                     'type'     => 'List',
                     'name'     => 'PreAlarmActions',
                     'caption'  => 'Aktionen',
-                    'rowCount' => 5,
+                    'rowCount' => $amountRows,
                     'add'      => true,
                     'delete'   => true,
                     'columns'  => [
@@ -495,30 +508,33 @@ trait ALM_Config
                             ]
                         ],
                         [
-                            'caption' => 'Aktion:',
-                            'name'    => 'LabelAction',
-                            'width'   => '200px',
-                            'add'     => '',
-                            'visible' => false,
-                            'edit'    => [
-                                'type' => 'Label',
-                                'bold' => true
-                            ]
-                        ],
-                        [
                             'caption' => 'Aktion',
                             'name'    => 'Action',
-                            'width'   => '600px',
+                            'width'   => '1000px',
                             'add'     => '',
-                            'visible' => true,
                             'edit'    => [
                                 'type' => 'SelectAction'
                             ]
                         ]
-                    ]
+                    ],
+                    'values' => $preAlarmActionListValues
                 ]
             ]
         ];
+
+        $mainAlarmActionListValues = [];
+        $variables = json_decode($this->ReadPropertyString('MainAlarmActions'), true);
+        $amountRows = count($variables) + 1;
+        if ($amountRows == 1) {
+            $amountRows = 3;
+        }
+        foreach ($variables as $variable) {
+            $rowColor = '#C0FFC0'; //light green
+            if (!$variable['Use']) {
+                $rowColor = '#DFDFDF'; //grey
+            }
+            $mainAlarmActionListValues[] = ['rowColor' => $rowColor];
+        }
 
         $form['elements'][] = [
             'type'    => 'ExpansionPanel',
@@ -554,7 +570,7 @@ trait ALM_Config
                     'type'     => 'List',
                     'name'     => 'MainAlarmActions',
                     'caption'  => 'Aktionen',
-                    'rowCount' => 5,
+                    'rowCount' => $amountRows,
                     'add'      => true,
                     'delete'   => true,
                     'columns'  => [
@@ -577,30 +593,33 @@ trait ALM_Config
                             ]
                         ],
                         [
-                            'caption' => 'Aktion:',
-                            'name'    => 'LabelAction',
-                            'width'   => '200px',
-                            'add'     => '',
-                            'visible' => false,
-                            'edit'    => [
-                                'type' => 'Label',
-                                'bold' => true
-                            ]
-                        ],
-                        [
                             'caption' => 'Aktion',
                             'name'    => 'Action',
-                            'width'   => '600px',
+                            'width'   => '1000px',
                             'add'     => '',
-                            'visible' => true,
                             'edit'    => [
                                 'type' => 'SelectAction'
                             ]
                         ]
-                    ]
+                    ],
+                    'value' => $mainAlarmActionListValues
                 ]
             ]
         ];
+
+        $postAlarmActionListValues = [];
+        $variables = json_decode($this->ReadPropertyString('PostAlarmActions'), true);
+        $amountRows = count($variables) + 1;
+        if ($amountRows == 1) {
+            $amountRows = 3;
+        }
+        foreach ($variables as $variable) {
+            $rowColor = '#C0FFC0'; //light green
+            if (!$variable['Use']) {
+                $rowColor = '#DFDFDF'; //grey
+            }
+            $postAlarmActionListValues[] = ['rowColor' => $rowColor];
+        }
 
         $form['elements'][] = [
             'type'    => 'ExpansionPanel',
@@ -628,7 +647,7 @@ trait ALM_Config
                     'type'     => 'List',
                     'name'     => 'PostAlarmActions',
                     'caption'  => 'Aktionen',
-                    'rowCount' => 5,
+                    'rowCount' => $amountRows,
                     'add'      => true,
                     'delete'   => true,
                     'columns'  => [
@@ -651,27 +670,16 @@ trait ALM_Config
                             ]
                         ],
                         [
-                            'caption' => 'Aktion:',
-                            'name'    => 'LabelAction',
-                            'width'   => '200px',
-                            'add'     => '',
-                            'visible' => false,
-                            'edit'    => [
-                                'type' => 'Label',
-                                'bold' => true
-                            ]
-                        ],
-                        [
                             'caption' => 'Aktion',
                             'name'    => 'Action',
-                            'width'   => '600px',
+                            'width'   => '1000px',
                             'add'     => '',
-                            'visible' => true,
                             'edit'    => [
                                 'type' => 'SelectAction'
                             ]
                         ]
-                    ]
+                    ],
+                    'values' => $postAlarmActionListValues
                 ]
             ]
         ];
@@ -758,6 +766,12 @@ trait ALM_Config
 
         ########## Actions
 
+        $form['actions'][] =
+            [
+                'type'    => 'Label',
+                'caption' => 'Schaltelemente'
+            ];
+
         //Test center
         $form['actions'][] =
             [
@@ -773,27 +787,40 @@ trait ALM_Config
         //Registered references
         $registeredReferences = [];
         $references = $this->GetReferenceList();
+        $amountReferences = count($references);
+        if ($amountReferences == 0) {
+            $amountReferences = 3;
+        }
         foreach ($references as $reference) {
             $name = 'Objekt #' . $reference . ' existiert nicht';
+            $location = '';
             $rowColor = '#FFC0C0'; //red
             if (@IPS_ObjectExists($reference)) {
                 $name = IPS_GetName($reference);
+                $location = IPS_GetLocation($reference);
                 $rowColor = '#C0FFC0'; //light green
             }
             $registeredReferences[] = [
-                'ObjectID' => $reference,
-                'Name'     => $name,
-                'rowColor' => $rowColor];
+                'ObjectID'         => $reference,
+                'Name'             => $name,
+                'VariableLocation' => $location,
+                'rowColor'         => $rowColor];
         }
 
         //Registered messages
         $registeredMessages = [];
         $messages = $this->GetMessageList();
+        $amountMessages = count($messages);
+        if ($amountMessages == 0) {
+            $amountMessages = 3;
+        }
         foreach ($messages as $id => $messageID) {
             $name = 'Objekt #' . $id . ' existiert nicht';
+            $location = '';
             $rowColor = '#FFC0C0'; //red
             if (@IPS_ObjectExists($id)) {
                 $name = IPS_GetName($id);
+                $location = IPS_GetLocation($id);
                 $rowColor = '#C0FFC0'; //light green
             }
             switch ($messageID) {
@@ -811,6 +838,7 @@ trait ALM_Config
             $registeredMessages[] = [
                 'ObjectID'           => $id,
                 'Name'               => $name,
+                'VariableLocation'   => $location,
                 'MessageID'          => $messageID,
                 'MessageDescription' => $messageDescription,
                 'rowColor'           => $rowColor];
@@ -822,10 +850,15 @@ trait ALM_Config
             'caption' => 'Entwicklerbereich',
             'items'   => [
                 [
+                    'type'    => 'Label',
+                    'caption' => 'Registrierte Referenzen',
+                    'bold'    => true,
+                    'italic'  => true
+                ],
+                [
                     'type'     => 'List',
                     'name'     => 'RegisteredReferences',
-                    'caption'  => 'Registrierte Referenzen',
-                    'rowCount' => 10,
+                    'rowCount' => $amountReferences,
                     'sort'     => [
                         'column'    => 'ObjectID',
                         'direction' => 'ascending'
@@ -835,13 +868,17 @@ trait ALM_Config
                             'caption' => 'ID',
                             'name'    => 'ObjectID',
                             'width'   => '150px',
-                            'onClick' => self::MODULE_PREFIX . '_ModifyButton($id, "RegisteredReferencesConfigurationButton", "ID " . $RegisteredReferences["ObjectID"] . " aufrufen", $RegisteredReferences["ObjectID"]);'
+                            'onClick' => self::MODULE_PREFIX . '_ModifyButton($id, "RegisteredReferencesConfigurationButton", "ID " . $RegisteredReferences["ObjectID"] . " bearbeiten", $RegisteredReferences["ObjectID"]);'
                         ],
                         [
                             'caption' => 'Name',
                             'name'    => 'Name',
                             'width'   => '300px',
-                            'onClick' => self::MODULE_PREFIX . '_ModifyButton($id, "RegisteredReferencesConfigurationButton", "ID " . $RegisteredReferences["ObjectID"] . " aufrufen", $RegisteredReferences["ObjectID"]);'
+                        ],
+                        [
+                            'caption' => 'Objektbaum',
+                            'name'    => 'VariableLocation',
+                            'width'   => '700px'
                         ]
                     ],
                     'values' => $registeredReferences
@@ -849,7 +886,7 @@ trait ALM_Config
                 [
                     'type'     => 'OpenObjectButton',
                     'name'     => 'RegisteredReferencesConfigurationButton',
-                    'caption'  => 'Aufrufen',
+                    'caption'  => 'Bearbeiten',
                     'visible'  => false,
                     'objectID' => 0
                 ],
@@ -858,10 +895,15 @@ trait ALM_Config
                     'caption' => ' '
                 ],
                 [
+                    'type'    => 'Label',
+                    'caption' => 'Registrierte Nachrichten',
+                    'bold'    => true,
+                    'italic'  => true
+                ],
+                [
                     'type'     => 'List',
                     'name'     => 'RegisteredMessages',
-                    'caption'  => 'Registrierte Nachrichten',
-                    'rowCount' => 10,
+                    'rowCount' => $amountMessages,
                     'sort'     => [
                         'column'    => 'ObjectID',
                         'direction' => 'ascending'
@@ -871,13 +913,17 @@ trait ALM_Config
                             'caption' => 'ID',
                             'name'    => 'ObjectID',
                             'width'   => '150px',
-                            'onClick' => self::MODULE_PREFIX . '_ModifyButton($id, "RegisteredMessagesConfigurationButton", "ID " . $RegisteredMessages["ObjectID"] . " aufrufen", $RegisteredMessages["ObjectID"]);'
+                            'onClick' => self::MODULE_PREFIX . '_ModifyButton($id, "RegisteredMessagesConfigurationButton", "ID " . $RegisteredMessages["ObjectID"] . " bearbeiten", $RegisteredMessages["ObjectID"]);'
                         ],
                         [
                             'caption' => 'Name',
                             'name'    => 'Name',
                             'width'   => '300px',
-                            'onClick' => self::MODULE_PREFIX . '_ModifyButton($id, "RegisteredMessagesConfigurationButton", "ID " . $RegisteredMessages["ObjectID"] . " aufrufen", $RegisteredMessages["ObjectID"]);'
+                        ],
+                        [
+                            'caption' => 'Objektbaum',
+                            'name'    => 'VariableLocation',
+                            'width'   => '700px'
                         ],
                         [
                             'caption' => 'Nachrichten ID',
@@ -895,7 +941,7 @@ trait ALM_Config
                 [
                     'type'     => 'OpenObjectButton',
                     'name'     => 'RegisteredMessagesConfigurationButton',
-                    'caption'  => 'Aufrufen',
+                    'caption'  => 'Bearbeiten',
                     'visible'  => false,
                     'objectID' => 0
                 ]

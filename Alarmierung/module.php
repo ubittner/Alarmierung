@@ -1,15 +1,15 @@
 <?php
 
 /**
- * @project       Alarmierung/Alarmierung
+ * @project       Alarmierung/Alarmierung/
  * @file          module.php
  * @author        Ulrich Bittner
- * @copyright     2022 Ulrich Bittner
+ * @copyright     2023 Ulrich Bittner
  * @license       https://creativecommons.org/licenses/by-nc-sa/4.0/ CC BY-NC-SA 4.0
  */
 
 /** @noinspection PhpUnhandledExceptionInspection */
-/** @noinspection DuplicatedCode */
+/** @noinspection SpellCheckingInspection */
 /** @noinspection PhpUnused */
 
 declare(strict_types=1);
@@ -20,7 +20,7 @@ class Alarmierung extends IPSModule
 {
     //Helper
     use ALM_AlarmState;
-    use ALM_Config;
+    use ALM_ConfigurationForm;
     use ALM_TriggerCondition;
 
     //Constants
